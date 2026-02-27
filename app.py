@@ -1,25 +1,26 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-from google import genai
+from google.generativeai import GenerativeModel, configure
 from dotenv import load_dotenv
 import os
 
 # Load environment variables
 load_dotenv()
 
+# Configure Gemini API
+configure(api_key=os.getenv("GEMINI_KEY"))
+
+# Create model
+model = GenerativeModel("gemini-1.5-flash")
+
 # Flask app
 app = Flask(__name__)
 CORS(app)
 
-# Gemini client
-client = genai.Client(api_key=os.getenv("GEMINI_KEY"))
-
-# Health check route (important for Render)
-@app.route("/", methods=["GET"])
+@app.route("/")
 def home():
-    return "AI Backend Running"
+    return "SmartCrack AI Backend Running"
 
-# Chat route
 @app.route("/chat", methods=["POST"])
 def chat():
     try:
@@ -36,20 +37,13 @@ Answer clearly and conversationally.
 User: {user_message}
 """
 
-        response = client.models.generate_content(
-            model="gemini-1.5-flash",
-            contents=prompt
-        )
+        response = model.generate_content(prompt)
 
-        reply = response.text if hasattr(response, "text") else "No response"
-
-        return jsonify({"reply": reply})
+        return jsonify({"reply": response.text})
 
     except Exception as e:
-        return jsonify({"reply": f"Error: {str(e)}"}), 500
+        return jsonify({"error": str(e)}), 500
 
 
-# Run app
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 10000))  # Render compatible
-    app.run(host="0.0.0.0", port=port)
+    app.run(host="0.0.0.0", port=10000)
