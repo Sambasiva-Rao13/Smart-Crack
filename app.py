@@ -1,48 +1,56 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-from google.generativeai import GenerativeModel, configure
-from dotenv import load_dotenv
+import google.generativeai as genai
 import os
 
-# Load environment variables
-load_dotenv()
-
-# Configure Gemini API
-configure(api_key=os.getenv("GEMINI_KEY"))
-
-# Create model
-model = GenerativeModel("gemini-1.5-flash")
-
-# Flask app
 app = Flask(__name__)
 CORS(app)
+
+# Load API key
+api_key = os.getenv("GEMINI_KEY")
+
+if not api_key:
+    raise ValueError("GEMINI_KEY environment variable not set")
+
+genai.configure(api_key=api_key)
+
+model = genai.GenerativeModel("gemini-1.5-flash")
+
 
 @app.route("/")
 def home():
     return "SmartCrack AI Backend Running"
 
+
 @app.route("/chat", methods=["POST"])
 def chat():
     try:
         data = request.get_json()
-        user_message = data.get("message", "")
 
-        if not user_message:
+        if not data or "message" not in data:
             return jsonify({"reply": "Please ask something."})
+
+        user_message = data["message"]
 
         prompt = f"""
 You are a helpful AI learning assistant for students.
-Answer clearly and conversationally.
+Explain clearly and simply.
 
-User: {user_message}
+Student: {user_message}
+AI:
 """
 
         response = model.generate_content(prompt)
 
-        return jsonify({"reply": response.text})
+        return jsonify({
+            "reply": response.text
+        })
 
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        print("ERROR:", str(e))
+        return jsonify({
+            "reply": "AI server error. Please try again."
+        }), 500
 
 
 if __name__ == "__main__":
