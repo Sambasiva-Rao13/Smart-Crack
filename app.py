@@ -6,7 +6,7 @@ import os
 app = Flask(__name__)
 CORS(app)
 
-# Load API key
+# Configure Gemini API
 api_key = os.getenv("GEMINI_KEY")
 
 if not api_key:
@@ -14,7 +14,8 @@ if not api_key:
 
 genai.configure(api_key=api_key)
 
-model = genai.GenerativeModel("gemini-1.5-flash")
+# Correct model name
+model = genai.GenerativeModel("gemini-1.5-flash-latest")
 
 
 @app.route("/")
@@ -28,16 +29,17 @@ def chat():
         data = request.get_json()
 
         if not data or "message" not in data:
-            return jsonify({"reply": "Please ask something."})
+            return jsonify({"reply": "Please send a message."})
 
         user_message = data["message"]
 
         prompt = f"""
-You are a helpful AI learning assistant for students.
-Explain clearly and simply.
+You are a helpful AI tutor for students.
 
-Student: {user_message}
-AI:
+Student question:
+{user_message}
+
+Answer clearly.
 """
 
         response = model.generate_content(prompt)
